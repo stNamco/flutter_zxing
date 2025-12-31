@@ -198,9 +198,9 @@ jobs:
         run: |
           cd ./example
           if [ "${{ matrix.target }}" == "linux" ]; then
-            xvfb-run flutter test integration_test -d "${{ matrix.device }}" --verbose
+            xvfb-run flutter test integration_test -d "${{ matrix.device }}"
           else
-            flutter test integration_test -d "${{ matrix.device }}" --verbose
+            flutter test integration_test -d "${{ matrix.device }}"
           fi
 
   # Integration tests on Android emulator
@@ -287,4 +287,4 @@ jobs:
           disable-animations: true
           script: |
             flutter devices
-            cd ./example && flutter test integration_test --verbose
+            cd ./example && flutter test integration_test -d emulator-5554
