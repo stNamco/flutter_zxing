@@ -41,7 +41,7 @@ jobs:
         run: dart format --set-exit-if-changed .
 
       - name: Analyze Dart code
-        run: dart analyze
+        run: melos exec -- dart analyze .
 
   # Build the example application across all supported platforms
   build-example:
