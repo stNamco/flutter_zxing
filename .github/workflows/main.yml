@@ -214,7 +214,7 @@ jobs:
         include:
           - api-level: 23
             target: default
-            arch: x86
+            arch: x86_64
           - api-level: 34
             target: google_apis
             arch: x86_64
