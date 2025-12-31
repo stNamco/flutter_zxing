@@ -287,4 +287,4 @@ jobs:
           disable-animations: true
           script: |
             flutter devices
-            cd ./example && flutter test integration_test -d
+            cd ./example && flutter test integration_test
