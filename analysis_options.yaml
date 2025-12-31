@@ -27,6 +27,8 @@ analyzer:
     unnecessary_null_comparison: warning
   exclude:
     - "lib/generated_bindings.dart"
+    - "example/**"
+    - "zxscanner/**"
     
 linter:
   rules:
