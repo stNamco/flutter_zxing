@@ -185,9 +185,11 @@ jobs:
       - name: Launch iOS Simulator for ${{ matrix.target }}
         if: matrix.target == 'ios'
         run: |
+          RUNTIME_ID=$(xcrun simctl list runtimes | grep -o "com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]*" | sort -r | head -n 1)
+          echo "Using runtime: $RUNTIME_ID"
           simulator_id=$(xcrun simctl create iphone-zxing \
             com.apple.CoreSimulator.SimDeviceType.iPhone-15 \
-            com.apple.CoreSimulator.SimRuntime.iOS-17-5)
+            $RUNTIME_ID)
           xcrun simctl boot ${simulator_id}
 
       # Run tests
