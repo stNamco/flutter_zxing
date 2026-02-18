@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -215,7 +216,55 @@ class _ReaderWidgetState extends State<ReaderWidget>
   // 解像度ログを1回だけ出力するためのフラグ
   bool _hasLoggedResolution = false;
 
+  // ベストフレーム選択用：シャープネスログを初回のみ出力
+  bool _hasLoggedSharpness = false;
+
   bool isAndroid() => Theme.of(context).platform == TargetPlatform.android;
+
+  /// Yプレーン中央領域のLaplacian分散でシャープネスを計算
+  /// 値が大きいほどシャープ（エッジが明瞭）
+  double _calculateSharpness(CameraImage image) {
+    final Plane yPlane = image.planes.first;
+    final Uint8List bytes = yPlane.bytes;
+    final int width = image.width;
+    final int height = image.height;
+    final int bytesPerRow = yPlane.bytesPerRow;
+
+    // 中央50%の領域のみ評価（QRコードが映っている可能性が高い領域）
+    final int regionX = width ~/ 4;
+    final int regionY = height ~/ 4;
+    final int regionW = width ~/ 2;
+    final int regionH = height ~/ 2;
+
+    // 4ピクセルおきにサンプリング（高速化）
+    const int step = 4;
+
+    double sum = 0;
+    double sumSq = 0;
+    int count = 0;
+
+    for (int y = regionY; y < regionY + regionH; y += step) {
+      if (y <= 0 || y >= height - 1) continue;
+      for (int x = regionX; x < regionX + regionW; x += step) {
+        if (x <= 0 || x >= width - 1) continue;
+        // Laplacian: 4*center - up - down - left - right
+        final int center = bytes[y * bytesPerRow + x];
+        final int up = bytes[(y - 1) * bytesPerRow + x];
+        final int down = bytes[(y + 1) * bytesPerRow + x];
+        final int left = bytes[y * bytesPerRow + (x - 1)];
+        final int right = bytes[y * bytesPerRow + (x + 1)];
+        final double laplacian =
+            (4 * center - up - down - left - right).toDouble();
+        sum += laplacian;
+        sumSq += laplacian * laplacian;
+        count++;
+      }
+    }
+
+    if (count == 0) return 0;
+    final double mean = sum / count;
+    return (sumSq / count) - (mean * mean);
+  }
 
   @override
   void initState() {
@@ -365,6 +414,7 @@ class _ReaderWidgetState extends State<ReaderWidget>
     // Reset processing state and create new version
     _isProcessing = false;
     _hasLoggedResolution = false;
+    _hasLoggedSharpness = false;
     _controllerVersion = DateTime.now().millisecondsSinceEpoch.toString();
     final String currentVersion = _controllerVersion;
 
@@ -486,6 +536,25 @@ class _ReaderWidgetState extends State<ReaderWidget>
             'planes: ${image.planes.length}, '
             'requested: ${widget.resolution}',
           );
+        }
+
+        // ベストフレーム選択: シャープネスが低いフレームをスキップ
+        final double sharpness = _calculateSharpness(image);
+        const double sharpnessThreshold = 200.0;
+        if (!_hasLoggedSharpness) {
+          _hasLoggedSharpness = true;
+          debugPrint(
+            'ReaderWidget: sharpness=$sharpness, '
+            'threshold=$sharpnessThreshold',
+          );
+        }
+        if (sharpness < sharpnessThreshold) {
+          debugPrint(
+            'ReaderWidget: skipping blurry frame '
+            '(sharpness=${sharpness.toStringAsFixed(1)})',
+          );
+          _isProcessing = false;
+          return;
         }
 
         final double cropPercent = widget.isMultiScan ? 0 : widget.cropPercent;
