@@ -212,6 +212,9 @@ class _ReaderWidgetState extends State<ReaderWidget>
 
   Codes results = Codes();
 
+  // 解像度ログを1回だけ出力するためのフラグ
+  bool _hasLoggedResolution = false;
+
   bool isAndroid() => Theme.of(context).platform == TargetPlatform.android;
 
   @override
@@ -361,6 +364,7 @@ class _ReaderWidgetState extends State<ReaderWidget>
 
     // Reset processing state and create new version
     _isProcessing = false;
+    _hasLoggedResolution = false;
     _controllerVersion = DateTime.now().millisecondsSinceEpoch.toString();
     final String currentVersion = _controllerVersion;
 
@@ -472,6 +476,18 @@ class _ReaderWidgetState extends State<ReaderWidget>
     if (!_isProcessing) {
       _isProcessing = true;
       try {
+        // 実際のカメラフレーム解像度をログ出力（初回のみ）
+        if (!_hasLoggedResolution) {
+          _hasLoggedResolution = true;
+          debugPrint(
+            'ReaderWidget: ImageAnalysis frame resolution: '
+            '${image.width}x${image.height}, '
+            'format: ${image.format.group}, '
+            'planes: ${image.planes.length}, '
+            'requested: ${widget.resolution}',
+          );
+        }
+
         final double cropPercent = widget.isMultiScan ? 0 : widget.cropPercent;
         final int cropSize =
             (min(image.width, image.height) * cropPercent).round();
