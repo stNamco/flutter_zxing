@@ -22,6 +22,7 @@
 #include "MultiFormatWriter.h"
 #include "BitMatrix.h"
 #include "Version.h"
+#include "clahe.h"
 
 #include <algorithm>
 #include <chrono>
@@ -33,8 +34,8 @@ using namespace std;
 using std::chrono::steady_clock;
 
 // Forward declare some impls
-CodeResult _readBarcode(const DecodeBarcodeParams& params) noexcept;
-CodeResults _readBarcodes(const DecodeBarcodeParams& params) noexcept;
+CodeResult _readBarcode(DecodeBarcodeParams& params) noexcept;
+CodeResults _readBarcodes(DecodeBarcodeParams& params) noexcept;
 EncodeResult _encodeBarcode(const EncodeBarcodeParams& params) noexcept;
 
 //
@@ -59,14 +60,14 @@ extern "C"
     CodeResult readBarcode(DecodeBarcodeParams* params) noexcept
     {
         unique_dart_ptr<DecodeBarcodeParams> _params(params);
-        return _readBarcode(*_params);
+        return _readBarcode(*_params);  // params.bytes modified in-place by CLAHE
     }
 
     FUNCTION_ATTRIBUTE
     CodeResults readBarcodes(DecodeBarcodeParams* params) noexcept
     {
         unique_dart_ptr<DecodeBarcodeParams> _params(params);
-        return _readBarcodes(*_params);
+        return _readBarcodes(*_params);  // params.bytes modified in-place by CLAHE
     }
 
     FUNCTION_ATTRIBUTE
@@ -107,6 +108,20 @@ ReaderOptions createReaderOptions(const DecodeBarcodeParams& params)
         .setTryDownscale(params.tryDownscale)
         .setMaxNumberOfSymbols(params.maxNumberOfSymbols)
         .setReturnErrors(true);
+}
+
+/// Apply CLAHE preprocessing to the image if it's a luminance format.
+/// Modifies the image bytes in-place before ZXing processing.
+void applyPreprocessing(DecodeBarcodeParams& params)
+{
+    // Only apply to luminance (grayscale) images
+    // ImageFormat::Lum = 0x01000000 in ZXing
+    if (params.imageFormat == 0x01000000 && params.bytes != nullptr
+        && params.width > 0 && params.height > 0)
+    {
+        platform_log("CLAHE: applying to %dx%d lum image\n", params.width, params.height);
+        applyCLAHE(params.bytes, params.width, params.height, 8, 8, 2.0);
+    }
 }
 
 /// Returns an owned C-string `char*` copied from a `std::string&`.
@@ -215,12 +230,15 @@ int elapsed_ms(const steady_clock::time_point& start)
 // FFI impls
 //
 
-CodeResult _readBarcode(const DecodeBarcodeParams& params) noexcept
+CodeResult _readBarcode(DecodeBarcodeParams& params) noexcept
 {
     // Absolutely ensure we don't unwind across the FFI boundary.
     try
     {
         auto start = steady_clock::now();
+
+        // Apply CLAHE preprocessing for better contrast under uneven lighting
+        applyPreprocessing(params);
 
         ImageView image = createCroppedImageView(params);
         ReaderOptions hints = createReaderOptions(params);
@@ -240,12 +258,15 @@ CodeResult _readBarcode(const DecodeBarcodeParams& params) noexcept
     }
 }
 
-CodeResults _readBarcodes(const DecodeBarcodeParams& params) noexcept
+CodeResults _readBarcodes(DecodeBarcodeParams& params) noexcept
 {
     // Absolutely ensure we don't unwind across the FFI boundary.
     try
     {
         auto start = steady_clock::now();
+
+        // Apply CLAHE preprocessing for better contrast under uneven lighting
+        applyPreprocessing(params);
 
         ImageView image = createCroppedImageView(params);
         ReaderOptions hints = createReaderOptions(params);
