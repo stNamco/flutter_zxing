@@ -821,7 +821,7 @@ class _ReaderWidgetState extends State<ReaderWidget>
       case ImageFormatGroup.jpeg:
         return zxing.ImageFormat.rgb;
       case ImageFormatGroup.nv21:
-        return zxing.ImageFormat.rgb;
+        return zxing.ImageFormat.lum;
     }
   }
 }
