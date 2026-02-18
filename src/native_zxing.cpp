@@ -119,7 +119,9 @@ void applyPreprocessing(DecodeBarcodeParams& params)
     if (params.imageFormat == 0x01000000 && params.bytes != nullptr
         && params.width > 0 && params.height > 0)
     {
-        platform_log("CLAHE: applying to %dx%d lum image\n", params.width, params.height);
+#ifdef __ANDROID__
+        __android_log_print(ANDROID_LOG_DEBUG, "flutter_zxing", "CLAHE: applying to %dx%d lum image", params.width, params.height);
+#endif
         applyCLAHE(params.bytes, params.width, params.height, 8, 8, 2.0);
     }
 }
