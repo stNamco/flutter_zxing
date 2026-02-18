@@ -541,18 +541,13 @@ class _ReaderWidgetState extends State<ReaderWidget>
         // ベストフレーム選択: シャープネスが低いフレームをスキップ
         final double sharpness = _calculateSharpness(image);
         const double sharpnessThreshold = 200.0;
-        if (!_hasLoggedSharpness) {
-          _hasLoggedSharpness = true;
-          debugPrint(
-            'ReaderWidget: sharpness=$sharpness, '
-            'threshold=$sharpnessThreshold',
-          );
-        }
-        if (sharpness < sharpnessThreshold) {
-          debugPrint(
-            'ReaderWidget: skipping blurry frame '
-            '(sharpness=${sharpness.toStringAsFixed(1)})',
-          );
+        final bool isSharp = sharpness >= sharpnessThreshold;
+        debugPrint(
+          'ReaderWidget: sharpness=${sharpness.toStringAsFixed(1)}, '
+          'threshold=$sharpnessThreshold, '
+          '${isSharp ? "PASS" : "SKIP"}',
+        );
+        if (!isSharp) {
           _isProcessing = false;
           return;
         }
