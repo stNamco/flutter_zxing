@@ -45,6 +45,7 @@ class ReaderWidget extends StatefulWidget {
     this.actionButtonsBackgroundColor = Colors.black,
     this.actionButtonsBackgroundBorderRadius,
     this.allowPinchZoom = true,
+    this.initialZoom = 1.0,
     this.scanDelay = const Duration(milliseconds: 1000),
     this.scanDelaySuccess = const Duration(milliseconds: 1000),
     this.cropPercent = 0.5, // 50% of the screen
@@ -153,6 +154,9 @@ class ReaderWidget extends StatefulWidget {
 
   /// Allow pinch zoom
   final bool allowPinchZoom;
+
+  /// Initial zoom level (1.0 = no zoom). Will be clamped to device's min/max range.
+  final double initialZoom;
 
   /// Delay between scans when no code is detected
   final Duration scanDelay;
@@ -456,6 +460,18 @@ class _ReaderWidgetState extends State<ReaderWidget>
 
       _maxZoomLevel = await cameraController.getMaxZoomLevel();
       _minZoomLevel = await cameraController.getMinZoomLevel();
+
+      // 初期ズームレベルを設定
+      if (widget.initialZoom > _minZoomLevel) {
+        _scaleFactor = widget.initialZoom.clamp(_minZoomLevel, _maxZoomLevel);
+        _zoom = _scaleFactor;
+        await cameraController.setZoomLevel(_scaleFactor);
+        debugPrint(
+          'ReaderWidget: initialZoom=${widget.initialZoom}, '
+          'applied=${_scaleFactor.toStringAsFixed(1)}, '
+          'range=[$_minZoomLevel, $_maxZoomLevel]',
+        );
+      }
 
       // バーコード/QRコードスキャン向けに連続オートフォーカスを有効化
       try {
