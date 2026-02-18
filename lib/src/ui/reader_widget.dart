@@ -403,6 +403,13 @@ class _ReaderWidgetState extends State<ReaderWidget>
       _maxZoomLevel = await cameraController.getMaxZoomLevel();
       _minZoomLevel = await cameraController.getMinZoomLevel();
 
+      // バーコード/QRコードスキャン向けに連続オートフォーカスを有効化
+      try {
+        await cameraController.setFocusMode(FocusMode.auto);
+      } catch (e) {
+        debugPrint('onNewCameraSelected: failed to set focus mode: $e');
+      }
+
       try {
         await cameraController.setFlashMode(FlashMode.off);
         if (!_isFlashAvailable && mounted) {
