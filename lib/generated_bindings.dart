@@ -291,6 +291,17 @@ final class CodeResult extends ffi.Struct {
   /// < The height of the image
   @ffi.Int()
   external int imageHeight;
+
+  /// < Number of symbols in structured append sequence. -1 if not part of a sequence.
+  @ffi.Int()
+  external int sequenceSize;
+
+  /// < 0-based index in structured append sequence. -1 if not part of a sequence.
+  @ffi.Int()
+  external int sequenceIndex;
+
+  /// < Parity/fileId for structured append. Owned pointer. Null if not part of a sequence.
+  external ffi.Pointer<ffi.Char> sequenceId;
 }
 
 /// @brief The CodeResults class encapsulates the result of decoding multiple barcodes within an image.

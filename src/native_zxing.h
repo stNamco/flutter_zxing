@@ -121,6 +121,9 @@ extern "C"
         int imageLength; ///< The length of the image bytes
         int imageWidth;  ///< The width of the image
         int imageHeight; ///< The height of the image
+        int sequenceSize;  ///< Number of symbols in structured append sequence. -1 if not part of a sequence.
+        int sequenceIndex; ///< 0-based index in structured append sequence. -1 if not part of a sequence.
+        char* sequenceId;  ///< Parity/fileId for structured append. Owned pointer. Null if not part of a sequence.
     };
 
     /**

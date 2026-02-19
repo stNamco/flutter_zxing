@@ -45,6 +45,9 @@ extension CodeExt on CodeResult {
       imageBytes: copyUint8ListFromOwnedFfiPtr(imageBytes, imageLength),
       imageWidth: imageWidth,
       imageHeight: imageHeight,
+      sequenceSize: sequenceSize,
+      sequenceIndex: sequenceIndex,
+      sequenceId: copyStringFromOwnedFfiPtr(sequenceId),
     );
   }
 }

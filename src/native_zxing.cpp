@@ -215,6 +215,12 @@ CodeResult codeResultFromResult(
         code.imageBytes = dartBytesFromImageView(image);
     }
 
+    // Structured Append info
+    code.sequenceSize = result.sequenceSize();
+    code.sequenceIndex = result.sequenceIndex();
+    auto seqId = result.sequenceId();
+    code.sequenceId = seqId.empty() ? nullptr : dartCstrFromString(seqId);
+
     return code;
 }
 
@@ -254,6 +260,9 @@ CodeResult _readBarcode(DecodeBarcodeParams& params) noexcept
         CodeResult result{};
         result.isValid = false;
         result.error = dartCstrFromException(e);
+        result.sequenceSize = -1;
+        result.sequenceIndex = -1;
+        result.sequenceId = nullptr;
         return result;
     }
 }

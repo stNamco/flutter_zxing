@@ -17,6 +17,9 @@ class Code {
     this.imageBytes,
     this.imageWidth,
     this.imageHeight,
+    this.sequenceSize = -1,
+    this.sequenceIndex = -1,
+    this.sequenceId,
   });
 
   String? text; // The text of the code
@@ -31,6 +34,12 @@ class Code {
   Uint8List? imageBytes; // The processed image bytes of the code
   int? imageWidth; // The width of the processed image
   int? imageHeight; // The height of the processed image
+  int sequenceSize; // Number of symbols in structured append sequence. -1 if not part of a sequence.
+  int sequenceIndex; // 0-based index in structured append sequence. -1 if not part of a sequence.
+  String? sequenceId; // Parity/fileId for structured append. Null if not part of a sequence.
+
+  /// Whether this code is part of a structured append sequence
+  bool get isPartOfSequence => sequenceSize > -1 && sequenceIndex > -1;
 }
 
 // Represents a list of barcode codes
