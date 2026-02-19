@@ -620,11 +620,6 @@ class _ReaderWidgetState extends State<ReaderWidget>
         final double sharpness = _calculateSharpness(image);
         const double sharpnessThreshold = 200.0;
         final bool isSharp = sharpness >= sharpnessThreshold;
-        debugPrint(
-          'ReaderWidget: sharpness=${sharpness.toStringAsFixed(1)}, '
-          'threshold=$sharpnessThreshold, '
-          '${isSharp ? "PASS" : "SKIP"}',
-        );
         widget.onSharpnessChanged?.call(sharpness, isSharp);
         if (!isSharp) {
           _isProcessing = false;
