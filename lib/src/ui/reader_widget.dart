@@ -61,6 +61,7 @@ class ReaderWidget extends StatefulWidget {
     this.actionSecondButtonIcon,
     this.actionSecondButtonIconBackgroundColor,
     this.debugSaveFrame = false,
+    this.onSharpnessChanged,
   });
 
   /// Called when a code is detected
@@ -196,6 +197,10 @@ class ReaderWidget extends StatefulWidget {
 
   /// Save debug frames (cropped grayscale PNG) to temp directory on scan failure
   final bool debugSaveFrame;
+
+  /// Called on each frame with sharpness info.
+  /// [sharpness] is the Laplacian variance, [isSharp] indicates if it exceeds the threshold.
+  final void Function(double sharpness, bool isSharp)? onSharpnessChanged;
 
   @override
   State<ReaderWidget> createState() => _ReaderWidgetState();
@@ -620,6 +625,7 @@ class _ReaderWidgetState extends State<ReaderWidget>
           'threshold=$sharpnessThreshold, '
           '${isSharp ? "PASS" : "SKIP"}',
         );
+        widget.onSharpnessChanged?.call(sharpness, isSharp);
         if (!isSharp) {
           _isProcessing = false;
           return;
