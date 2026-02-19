@@ -474,10 +474,17 @@ class _ReaderWidgetState extends State<ReaderWidget>
       }
 
       // バーコード/QRコードスキャン向けに連続オートフォーカスを有効化
+      // フォーカス・露出ポイントを中央に設定し、QRコードに最適化
       try {
         await cameraController.setFocusMode(FocusMode.auto);
+        await cameraController.setFocusPoint(const Offset(0.5, 0.5));
       } catch (e) {
-        debugPrint('onNewCameraSelected: failed to set focus mode: $e');
+        debugPrint('onNewCameraSelected: failed to set focus: $e');
+      }
+      try {
+        await cameraController.setExposurePoint(const Offset(0.5, 0.5));
+      } catch (e) {
+        debugPrint('onNewCameraSelected: failed to set exposure point: $e');
       }
 
       try {
