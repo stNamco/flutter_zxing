@@ -61,6 +61,7 @@ class ReaderWidget extends StatefulWidget {
     this.actionSecondButtonIcon,
     this.actionSecondButtonIconBackgroundColor,
     this.debugSaveFrame = false,
+    this.sharpnessThreshold = 200.0,
     this.onSharpnessChanged,
   });
 
@@ -197,6 +198,10 @@ class ReaderWidget extends StatefulWidget {
 
   /// Save debug frames (cropped grayscale PNG) to temp directory on scan failure
   final bool debugSaveFrame;
+
+  /// Minimum sharpness (Laplacian variance) required to process a frame.
+  /// Frames below this threshold are skipped. Default is 200.0.
+  final double sharpnessThreshold;
 
   /// Called on each frame with sharpness info.
   /// [sharpness] is the Laplacian variance, [isSharp] indicates if it exceeds the threshold.
@@ -618,8 +623,7 @@ class _ReaderWidgetState extends State<ReaderWidget>
 
         // ベストフレーム選択: シャープネスが低いフレームをスキップ
         final double sharpness = _calculateSharpness(image);
-        const double sharpnessThreshold = 200.0;
-        final bool isSharp = sharpness >= sharpnessThreshold;
+        final bool isSharp = sharpness >= widget.sharpnessThreshold;
         widget.onSharpnessChanged?.call(sharpness, isSharp);
         if (!isSharp) {
           _isProcessing = false;
