@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../flutter_zxing.dart';
 import '../../flutter_zxing.dart' as zxing;
+import '../utils/image_converter.dart';
 import 'scan_mode_dropdown.dart';
 
 /// Widget to scan a code from the camera stream
@@ -58,6 +60,7 @@ class ReaderWidget extends StatefulWidget {
     this.onActionSecondButton,
     this.actionSecondButtonIcon,
     this.actionSecondButtonIconBackgroundColor,
+    this.debugSaveFrame = false,
   });
 
   /// Called when a code is detected
@@ -191,6 +194,9 @@ class ReaderWidget extends StatefulWidget {
   /// Background color for the second action icon
   final Color? actionSecondButtonIconBackgroundColor;
 
+  /// Save debug frames (cropped grayscale PNG) to temp directory on scan failure
+  final bool debugSaveFrame;
+
   @override
   State<ReaderWidget> createState() => _ReaderWidgetState();
 }
@@ -216,6 +222,10 @@ class _ReaderWidgetState extends State<ReaderWidget>
   double _minZoomLevel = 1.0;
 
   Codes results = Codes();
+
+  // デバッグフレーム保存用
+  DateTime _lastDebugSave = DateTime(2000);
+  int _debugFrameCount = 0;
 
   // 解像度ログを1回だけ出力するためのフラグ
   bool _hasLoggedResolution = false;
@@ -268,6 +278,46 @@ class _ReaderWidgetState extends State<ReaderWidget>
     if (count == 0) return 0;
     final double mean = sum / count;
     return (sumSq / count) - (mean * mean);
+  }
+
+  /// デバッグ用: クロップ済みグレースケール画像をPNGとして保存
+  void _saveDebugFrame(
+      CameraImage image, int cropLeft, int cropTop, int cropSize) {
+    try {
+      final Plane yPlane = image.planes.first;
+      final int bytesPerRow = yPlane.bytesPerRow;
+      final int w = cropSize > 0 ? cropSize : image.width;
+      final int h = cropSize > 0 ? cropSize : image.height;
+      final int left = cropSize > 0 ? cropLeft : 0;
+      final int top = cropSize > 0 ? cropTop : 0;
+
+      // Y planeからクロップ領域を抽出
+      final Uint8List cropped = Uint8List(w * h);
+      for (int y = 0; y < h; y++) {
+        final int srcOffset = (top + y) * bytesPerRow + left;
+        cropped.setRange(y * w, y * w + w, yPlane.bytes, srcOffset);
+      }
+
+      // PNGに変換して保存
+      final Uint8List pngBytes = pngFromBytes(cropped, w, h);
+
+      final Directory dir =
+          Directory('${Directory.systemTemp.path}/debug_frames');
+      if (!dir.existsSync()) {
+        dir.createSync(recursive: true);
+      }
+      _debugFrameCount++;
+      final String name =
+          'frame_${_debugFrameCount.toString().padLeft(4, '0')}.png';
+      final File file = File('${dir.path}/$name');
+      file.writeAsBytesSync(pngBytes);
+      debugPrint(
+        'ReaderWidget: debug frame saved: ${file.path} '
+        '(${w}x${h}, crop=$cropLeft,$cropTop)',
+      );
+    } catch (e) {
+      debugPrint('ReaderWidget: failed to save debug frame: $e');
+    }
   }
 
   @override
@@ -643,6 +693,15 @@ class _ReaderWidgetState extends State<ReaderWidget>
           } else {
             results = Codes();
             widget.onScanFailure?.call(result);
+
+            // デバッグフレーム保存（3秒間隔）
+            if (widget.debugSaveFrame) {
+              final DateTime now = DateTime.now();
+              if (now.difference(_lastDebugSave).inSeconds >= 3) {
+                _lastDebugSave = now;
+                _saveDebugFrame(image, cropLeft, cropTop, cropSize);
+              }
+            }
           }
         }
       } catch (e) {
