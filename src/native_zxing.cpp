@@ -107,7 +107,6 @@ ReaderOptions createReaderOptions(const DecodeBarcodeParams& params)
         .setTryInvert(params.tryInvert)
         .setTryDownscale(params.tryDownscale)
         .setMaxNumberOfSymbols(params.maxNumberOfSymbols)
-        .setBinarizer(Binarizer::GlobalHistogram)
         .setReturnErrors(true);
 }
 
